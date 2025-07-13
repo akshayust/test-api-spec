@@ -1,0 +1,446 @@
+
+openapi: 3.0.3
+info:
+  title: Neuro Nova Web Portal API
+  description: API spec for employee onboarding, training, initiatives, structure, achievements, and utilities.
+  version: 1.0.0
+
+servers:
+  - url: https://api.neuronova.com
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Training
+  - name: Onboarding
+  - name: Initiatives
+  - name: Organization
+  - name: Achievements
+  - name: Technology
+  - name: Utilities
+  - name: Admin
+  - name: Dashboard
+  - name: Auth
+  - name: Photos
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TrainingVideo:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        thumbnailUrl: { type: string, format: uri }
+        videoUrl: { type: string, format: uri }
+        role: { type: string }
+        tags: 
+          type: array
+          items: { type: string }
+
+    OnboardingChecklist:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        steps: 
+          type: array
+          items: 
+            type: object
+            properties:
+              step: { type: string }
+              completed: { type: boolean }
+
+    Initiative:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+
+    Achievement:
+      type: object
+      properties:
+        id: { type: string }
+        category: { type: string, enum: [account, individual] }
+        title: { type: string }
+        imageUrl: { type: string, format: uri }
+
+    TechnologyGroup:
+      type: object
+      properties:
+        id: { type: string }
+        group: { type: string }
+        name: { type: string }
+        description: { type: string }
+
+    Utility:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        link: { type: string, format: uri }
+        rolesVisibleTo:
+          type: array
+          items: { type: string }
+
+    DashboardStats:
+      type: object
+      properties:
+        totalTrainingHours: { type: number }
+        skillProgress: 
+          type: array
+          items: 
+            type: object
+            properties:
+              skill: { type: string }
+              progress: { type: number }
+
+    PhotoEvent:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        imageUrls:
+          type: array
+          items: { type: string, format: uri }
+
+paths:
+
+  /api/training-videos:
+    get:
+      tags: [Training]
+      summary: Get list of training videos
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: role
+          schema: { type: string }
+          description: Filter by user role
+      responses:
+        200:
+          description: List of videos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TrainingVideo'
+
+  /api/onboarding-checklist:
+    get:
+      tags: [Onboarding]
+      summary: Get onboarding checklist by role
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: role
+          schema: { type: string }
+      responses:
+        200:
+          description: Onboarding checklist
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OnboardingChecklist'
+
+  /api/initiatives:
+    get:
+      tags: [Initiatives]
+      summary: Get all initiatives
+      security: [ { bearerAuth: [] } ]
+      responses:
+        200:
+          description: List of initiatives
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Initiative'
+
+  /api/achievements:
+    get:
+      tags: [Achievements]
+      summary: Get all achievements grouped by category
+      responses:
+        200:
+          description: List of achievements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Achievement'
+
+  /api/technology-groups:
+    get:
+      tags: [Technology]
+      summary: Get grouped technologies
+      responses:
+        200:
+          description: Technologies grouped by type
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TechnologyGroup'
+
+  /api/utilities:
+    get:
+      tags: [Utilities]
+      summary: Get list of utilities based on role
+      security: [ { bearerAuth: [] } ]
+      responses:
+        200:
+          description: Role-based utilities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Utility'
+
+  /api/dashboard:
+    get:
+      tags: [Dashboard]
+      summary: Get dashboard data
+      security: [ { bearerAuth: [] } ]
+      responses:
+        200:
+          description: Dashboard stats
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardStats'
+
+  /api/org-structure:
+    get:
+      tags: [Organization]
+      summary: Get organizational hierarchy
+      security: [ { bearerAuth: [] } ]
+      responses:
+        200:
+          description: Org chart tree
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  manager: { type: string }
+                  teams:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        name: { type: string }
+                        members: 
+                          type: array
+                          items: { type: string }
+
+  /api/reports:
+    get:
+      tags: [Admin]
+      summary: Get downloadable training and usage reports
+      security: [ { bearerAuth: [] } ]
+      responses:
+        200:
+          description: CSV or JSON download link
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  downloadUrl: { type: string }
+
+  /api/notifications:
+    post:
+      tags: [Admin]
+      summary: Broadcast a message to users
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message: { type: string }
+                roles: 
+                  type: array
+                  items: { type: string }
+      responses:
+        200:
+          description: Broadcast sent
+
+  /api/photo-events:
+    get:
+      tags: [Photos]
+      summary: Get all photo gallery events
+      responses:
+        200:
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PhotoEvent'
+
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: User login via external provider
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email: { type: string, format: email }
+                password: { type: string, format: password }
+      responses:
+        200:
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token: { type: string }
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout current user
+      security: [ { bearerAuth: [] } ]
+      responses:
+        200:
+          description: Logged out
+
+  /api/me:
+    get:
+      tags: [Auth]
+      summary: Get current user profile
+      security: [ { bearerAuth: [] } ]
+      responses:
+        200:
+          description: User info
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: string }
+                  name: { type: string }
+                  email: { type: string, format: email }
+                  role: { type: string }
+
+  /api/users:
+    get:
+      tags: [Admin]
+      summary: Get all users (admin only)
+      security: [ { bearerAuth: [] } ]
+      responses:
+        200:
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id: { type: string }
+                    name: { type: string }
+                    email: { type: string }
+                    role: { type: string }
+
+    post:
+      tags: [Admin]
+      summary: Create a new user
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                email: { type: string }
+                role: { type: string }
+      responses:
+        201:
+          description: User created
+
+  /api/users/{id}:
+    put:
+      tags: [Admin]
+      summary: Update user details
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name: { type: string }
+                role: { type: string }
+      responses:
+        200:
+          description: User updated
+
+    delete:
+      tags: [Admin]
+      summary: Delete a user
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      responses:
+        204:
+          description: User deleted
+
+  /api/users/{id}/status:
+    patch:
+      tags: [Admin]
+      summary: Activate or deactivate a user
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                active: { type: boolean }
+      responses:
+        200:
+          description: User status updated
+
